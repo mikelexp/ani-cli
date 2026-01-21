@@ -301,6 +301,29 @@ download() {
     esac
 }
 
+open_in_browser() {
+    anime_id="$1"
+    episode="$2"
+    translation="$3"
+    url="https://allanime.to/watch/${anime_id}/${translation}/episode-${episode}"
+    case "$(uname -s)" in
+        Darwin*) open "$url" 2>/dev/null & ;;
+        MINGW* | *Msys) start "" "$url" 2>/dev/null & ;;
+        *)
+            if command -v xdg-open >/dev/null; then
+                xdg-open "$url" 2>/dev/null &
+            elif command -v firefox >/dev/null; then
+                firefox "$url" 2>/dev/null &
+            elif command -v chromium >/dev/null; then
+                chromium "$url" 2>/dev/null &
+            else
+                die "No browser found. Install xdg-open, firefox or chromium."
+            fi
+            ;;
+    esac
+    printf "\033[1;32mOpened in browser: %s\033[0m\n" "$url"
+}
+
 play_episode() {
     [ "$log_episode" = 1 ] && [ "$player_function" != "debug" ] && [ "$player_function" != "download" ] && command -v logger >/dev/null && logger -t ani-cli "${allanime_title}${ep_no}"
     [ "$skip_intro" = 1 ] && skip_flag="$(ani-skip -q "$mal_id" -e "$ep_no")"
