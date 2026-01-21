@@ -565,24 +565,33 @@ tput cuu1 && tput el
 # stores the position of cursor
 tput sc
 
-# playback & loop
-play
-[ "$player_function" = "download" ] || [ "$player_function" = "debug" ] && exit 0
+# handle -d (download) and debug flags - execute directly without menu
+if [ "$player_function" = "download" ] || [ "$player_function" = "debug" ]; then
+    play
+    exit 0
+fi
 
-while cmd=$(printf "next\nreplay\nprevious\nselect\nchange_quality\nquit" | nth "Playing episode $ep_no of $title... "); do
+# menu loop
+while cmd=$(printf "play\ndownload\nbrowser\nnext\nprevious\nselect\nquit" | nth "Episode $ep_no of $title: "); do
     case "$cmd" in
+        play)
+            play
+            ;;
+        download)
+            get_episode_url
+            printf "\033[1;34mDownloading episode %s...\033[0m\n" "$ep_no"
+            download "$episode" "${allanime_title}Episode ${ep_no}"
+            printf "\033[1;32mDownload complete: %s/%sEpisode %s.mp4\033[0m\n" "$download_dir" "$allanime_title" "$ep_no"
+            ;;
+        browser)
+            open_in_browser "$id" "$ep_no" "$mode"
+            ;;
         next) ep_no=$(printf "%s" "$ep_list" | sed -n "/^${ep_no}$/{n;p;}") 2>/dev/null ;;
-        replay) episode="$replay" ;;
         previous) ep_no=$(printf "%s" "$ep_list" | sed -n "/^${ep_no}$/{g;1!p;};h") 2>/dev/null ;;
         select) ep_no=$(printf "%s" "$ep_list" | nth "Select episode: " "$multi_selection_flag") ;;
-        change_quality)
-            new_quality="$(printf "%s" "$links" | launcher | cut -d\> -f1)"
-            select_quality "$new_quality"
-            ;;
         *) exit 0 ;;
     esac
     [ -z "$ep_no" ] && die "Out of range"
-    play
 done
 
 # ani-cli
